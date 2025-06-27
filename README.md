@@ -2,6 +2,8 @@
 
 A CLI tool that generates GitHub-style contribution maps for your Claude AI usage, inspired by [ccusage](https://github.com/ryoppippi/ccusage).
 
+![Claude Contributions Example](claude-contribs-example.png)
+
 ## Features
 
 - 📊 **Visual Contribution Maps**: GitHub-style contribution grids showing your Claude usage patterns
