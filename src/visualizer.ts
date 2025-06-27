@@ -95,7 +95,8 @@ export class ContributionVisualizer {
 
   renderSvg(map: ContributionMap): string {
     const cellSize = 11;
-    const cellGap = 2;
+    const cellGap = 1; // Reduced from 2 for tighter spacing
+    const cellRadius = 2; // Rounded corners
     const monthLabelHeight = 15;
     const dayLabelWidth = 25;
     
@@ -138,7 +139,7 @@ export class ContributionVisualizer {
         const y = monthLabelHeight + 50 + (dayIndex * (cellSize + cellGap));
         const color = getSvgColor(day.level);
         
-        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${color}" stroke="#1b1f23" stroke-width="1">`;
+        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="${cellRadius}" ry="${cellRadius}" fill="${color}" stroke="#1b1f23" stroke-width="0.5">`;
         svg += `<title>${day.date}: ${formatTokenCount(day.tokens)} tokens</title>`;
         svg += `</rect>`;
       });
@@ -149,11 +150,11 @@ export class ContributionVisualizer {
     svg += `<text x="10" y="${legendY}" font-family="Arial, sans-serif" font-size="9" fill="#666">Less</text>`;
     
     for (let level = 0; level <= 4; level++) {
-      const x = 40 + (level * (cellSize + 2));
-      svg += `<rect x="${x}" y="${legendY - 10}" width="${cellSize}" height="${cellSize}" fill="${getSvgColor(level)}" stroke="#1b1f23" stroke-width="1"/>`;
+      const x = 40 + (level * (cellSize + cellGap));
+      svg += `<rect x="${x}" y="${legendY - 10}" width="${cellSize}" height="${cellSize}" rx="${cellRadius}" ry="${cellRadius}" fill="${getSvgColor(level)}" stroke="#1b1f23" stroke-width="0.5"/>`;
     }
     
-    svg += `<text x="${40 + (5 * (cellSize + 2))}" y="${legendY}" font-family="Arial, sans-serif" font-size="9" fill="#666">More</text>`;
+    svg += `<text x="${40 + (5 * (cellSize + cellGap))}" y="${legendY}" font-family="Arial, sans-serif" font-size="9" fill="#666">More</text>`;
     
     svg += '</svg>';
     return svg;
