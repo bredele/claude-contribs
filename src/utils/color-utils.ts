@@ -1,6 +1,6 @@
 import chalk, { type ChalkInstance } from 'chalk';
 
-// GitHub-style contribution levels (0-4)
+// Anthropic Claude-style contribution levels (0-4)
 export function getContributionLevel(tokens: number, maxTokens: number): number {
   if (tokens === 0) return 0;
   
@@ -12,26 +12,26 @@ export function getContributionLevel(tokens: number, maxTokens: number): number 
   return 1;
 }
 
-// Terminal colors for contribution levels
+// Terminal colors for contribution levels (Claude orange/brown theme)
 export function getTerminalColor(level: number): ChalkInstance {
   switch (level) {
     case 0: return chalk.gray;
-    case 1: return chalk.green;
-    case 2: return chalk.greenBright;
-    case 3: return chalk.hex('#40c463'); // Bright green
-    case 4: return chalk.hex('#30a14e'); // Dark green
+    case 1: return chalk.hex('#f4a261'); // Light orange
+    case 2: return chalk.hex('#e76f51'); // Medium orange
+    case 3: return chalk.hex('#d4621e'); // Dark orange
+    case 4: return chalk.hex('#b8440f'); // Deep orange/brown
     default: return chalk.gray;
   }
 }
 
-// SVG colors for contribution levels
+// SVG colors for contribution levels (Claude orange/brown theme)
 export function getSvgColor(level: number): string {
   switch (level) {
-    case 0: return '#ebedf0';
-    case 1: return '#9be9a8';
-    case 2: return '#40c463';
-    case 3: return '#30a14e';
-    case 4: return '#216e39';
+    case 0: return '#ebedf0';        // Light gray (no activity)
+    case 1: return '#fde2b3';        // Very light orange
+    case 2: return '#f4a261';        // Light orange  
+    case 3: return '#e76f51';        // Medium orange
+    case 4: return '#d4621e';        // Dark orange
     default: return '#ebedf0';
   }
 }
