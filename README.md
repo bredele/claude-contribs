@@ -1,4 +1,4 @@
-# Claude Contributions
+# Claude Contribs
 
 A CLI tool that generates GitHub-style contribution maps for your Claude AI usage, inspired by [ccusage](https://github.com/ryoppippi/ccusage).
 
@@ -13,7 +13,7 @@ A CLI tool that generates GitHub-style contribution maps for your Claude AI usag
 ## Installation
 
 ```bash
-npm install -g claude-contributions
+npm install -g claude-contribs
 ```
 
 ## Usage
@@ -22,26 +22,26 @@ npm install -g claude-contributions
 
 ```bash
 # Show current year contribution map
-claude-contributions show
+claude-contribs show
 
 # Show specific year
-claude-contributions show --year 2024
+claude-contribs show --year 2024
 
 # Export as SVG
-claude-contributions show --format svg
+claude-contribs show --format svg
 
 # Use custom data directory
-claude-contributions show --data-dir /path/to/claude/data
+claude-contribs show --data-dir /path/to/claude/data
 ```
 
 ### View Statistics
 
 ```bash
 # Show all-time statistics
-claude-contributions stats
+claude-contribs stats
 
 # Show statistics for date range
-claude-contributions stats --from 2024-01-01 --to 2024-12-31
+claude-contribs stats --from 2024-01-01 --to 2024-12-31
 ```
 
 ## Data Source
@@ -72,8 +72,8 @@ The tool reads Claude Code JSONL files automatically and processes assistant mes
 
 ## Commands
 
-- `claude-contributions show` - Display contribution map (default command)
-- `claude-contributions stats` - Show usage statistics
+- `claude-contribs show` - Display contribution map (default command)
+- `claude-contribs stats` - Show usage statistics
 
 ## Development
 
