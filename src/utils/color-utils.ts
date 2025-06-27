@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import chalk, { type ChalkInstance } from 'chalk';
 
 // GitHub-style contribution levels (0-4)
 export function getContributionLevel(tokens: number, maxTokens: number): number {
@@ -13,7 +13,7 @@ export function getContributionLevel(tokens: number, maxTokens: number): number 
 }
 
 // Terminal colors for contribution levels
-export function getTerminalColor(level: number): chalk.Chalk {
+export function getTerminalColor(level: number): ChalkInstance {
   switch (level) {
     case 0: return chalk.gray;
     case 1: return chalk.green;
