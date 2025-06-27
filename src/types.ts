@@ -66,6 +66,9 @@ export interface ContributionWeek {
 
 export interface ContributionMap {
   year: number;
+  startMonth: number; // 1-12
+  endMonth: number; // 1-12
+  dateRange: string; // e.g., "July 2024 - July 2025"
   weeks: ContributionWeek[];
   totalTokens: number;
   maxDailyTokens: number;
@@ -76,6 +79,7 @@ export interface ShowOptions {
   year?: number;
   format?: 'terminal' | 'svg';
   dataDir?: string;
+  startMonth?: number; // 1-12, defaults to 1 (January)
 }
 
 export interface StatsOptions {

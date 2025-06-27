@@ -1,11 +1,11 @@
 import chalk from 'chalk';
 import type { DailyUsage, ContributionMap, ContributionWeek, ContributionDay } from './types.js';
-import { getWeeksInYear, getDaysInWeek, formatDate } from './utils/date-utils.js';
+import { getWeeksInYear, getWeeksInCustomYear, getDaysInWeek, formatDate, getMonthName } from './utils/date-utils.js';
 import { getContributionLevel, getTerminalColor, getSvgColor, formatTokenCount } from './utils/color-utils.js';
 
 export class ContributionVisualizer {
-  generateContributionMap(dailyUsage: DailyUsage[], year: number): ContributionMap {
-    const weeks = getWeeksInYear(year);
+  generateContributionMap(dailyUsage: DailyUsage[], year: number, startMonth: number = 1): ContributionMap {
+    const weeks = startMonth === 1 ? getWeeksInYear(year) : getWeeksInCustomYear(year, startMonth);
     const usageMap = new Map(dailyUsage.map(usage => [usage.date, usage]));
     
     let totalTokens = 0;
@@ -34,8 +34,22 @@ export class ContributionVisualizer {
       return { days: contributionDays };
     });
     
+    // Calculate end month and date range
+    const endMonth = startMonth === 1 ? 12 : startMonth - 1;
+    const endYear = startMonth === 1 ? year : year + 1;
+    
+    let dateRange: string;
+    if (startMonth === 1) {
+      dateRange = `${year}`;
+    } else {
+      dateRange = `${getMonthName(startMonth)} ${year} - ${getMonthName(endMonth)} ${endYear}`;
+    }
+    
     return {
       year,
+      startMonth,
+      endMonth,
+      dateRange,
       weeks: contributionWeeks,
       totalTokens,
       maxDailyTokens,
@@ -45,14 +59,14 @@ export class ContributionVisualizer {
   renderTerminal(map: ContributionMap): string {
     const output: string[] = [];
     
-    // Header with year and stats
+    // Header with date range and stats
     output.push('');
-    output.push(chalk.bold(`Claude Contributions ${map.year}`));
+    output.push(chalk.bold(`Claude Contributions ${map.dateRange}`));
     output.push(chalk.gray(`Total tokens: ${formatTokenCount(map.totalTokens)} | Max daily: ${formatTokenCount(map.maxDailyTokens)}`));
     output.push('');
     
     // Month labels
-    const monthLabels = this.generateMonthLabels(map.year);
+    const monthLabels = this.generateMonthLabels(map.startMonth);
     output.push(`     ${monthLabels}`);
     
     // Day labels and contribution grid
@@ -96,13 +110,13 @@ export class ContributionVisualizer {
     svg += `<rect width="100%" height="100%" fill="white"/>`;
     
     // Title
-    svg += `<text x="10" y="20" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Claude Contributions ${map.year}</text>`;
+    svg += `<text x="10" y="20" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Claude Contributions ${map.dateRange}</text>`;
     
     // Stats
     svg += `<text x="10" y="35" font-family="Arial, sans-serif" font-size="10" fill="#666">Total: ${formatTokenCount(map.totalTokens)} tokens | Max daily: ${formatTokenCount(map.maxDailyTokens)}</text>`;
     
     // Month labels
-    const monthLabels = this.generateMonthLabelsForSvg(map.year);
+    const monthLabels = this.generateMonthLabelsForSvg(map.startMonth);
     monthLabels.forEach((month, index) => {
       const x = dayLabelWidth + (index * 4.5 * (cellSize + cellGap));
       svg += `<text x="${x}" y="${monthLabelHeight + 40}" font-family="Arial, sans-serif" font-size="9" fill="#666">${month}</text>`;
@@ -145,21 +159,30 @@ export class ContributionVisualizer {
     return svg;
   }
 
-  private generateMonthLabels(year: number): string {
+  private generateMonthLabels(startMonth: number = 1): string {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthSpacing = 4; // Approximate weeks per month
     
     let label = '';
     for (let i = 0; i < 12; i++) {
+      const monthIndex = (startMonth - 1 + i) % 12;
       const position = i * monthSpacing * 2; // 2 chars per week
-      label = label.padEnd(position, ' ') + months[i];
+      label = label.padEnd(position, ' ') + months[monthIndex];
     }
     
     return label.substring(0, 106); // Truncate to fit 53 weeks
   }
 
-  private generateMonthLabelsForSvg(year: number): string[] {
-    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  private generateMonthLabelsForSvg(startMonth: number = 1): string[] {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const orderedMonths: string[] = [];
+    
+    for (let i = 0; i < 12; i++) {
+      const monthIndex = (startMonth - 1 + i) % 12;
+      orderedMonths.push(months[monthIndex]);
+    }
+    
+    return orderedMonths;
   }
 
   private generateLegend(): string {

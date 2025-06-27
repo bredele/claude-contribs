@@ -6,6 +6,7 @@ import { getDefaultYear } from '../utils/date-utils.js';
 
 export async function showCommand(options: ShowOptions): Promise<void> {
   const year = options.year || getDefaultYear();
+  const startMonth = options.startMonth || 1;
   const format = options.format || 'terminal';
   
   try {
@@ -19,23 +20,28 @@ export async function showCommand(options: ShowOptions): Promise<void> {
       return;
     }
     
-    // Filter entries for the specified year
-    const yearEntries = entries.filter(entry => {
-      const entryYear = new Date(entry.timestamp).getFullYear();
-      return entryYear === year;
+    // Filter entries for the specified date range
+    const startDate = new Date(year, startMonth - 1, 1);
+    const endDate = new Date(year + 1, startMonth - 1, 0);
+    
+    const rangeEntries = entries.filter(entry => {
+      const entryDate = new Date(entry.timestamp);
+      return entryDate >= startDate && entryDate <= endDate;
     });
     
-    if (yearEntries.length === 0) {
-      console.log(`No Claude usage data found for year ${year}.`);
+    if (rangeEntries.length === 0) {
+      const dateRangeStr = startMonth === 1 ? `year ${year}` : 
+        `${startMonth === 1 ? year : `${new Date(year, startMonth - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - ${new Date(year + 1, startMonth - 2).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}`;
+      console.log(`No Claude usage data found for ${dateRangeStr}.`);
       return;
     }
     
     // Aggregate by day
-    const dailyUsage = loader.aggregateByDay(yearEntries);
+    const dailyUsage = loader.aggregateByDay(rangeEntries);
     
     // Generate contribution map
     const visualizer = new ContributionVisualizer();
-    const map = visualizer.generateContributionMap(dailyUsage, year);
+    const map = visualizer.generateContributionMap(dailyUsage, year, startMonth);
     
     // Render based on format
     if (format === 'terminal') {
@@ -43,7 +49,9 @@ export async function showCommand(options: ShowOptions): Promise<void> {
       console.log(output);
     } else if (format === 'svg') {
       const svg = visualizer.renderSvg(map);
-      const filename = `claude-contributions-${year}.svg`;
+      const filename = startMonth === 1 ? 
+        `claude-contributions-${year}.svg` : 
+        `claude-contributions-${year}-${startMonth.toString().padStart(2, '0')}.svg`;
       await writeFile(filename, svg);
       console.log(`SVG file saved: ${filename}`);
     }
