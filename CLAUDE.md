@@ -26,7 +26,7 @@ This is a TypeScript CLI tool that generates GitHub-style contribution maps for 
 ## Architecture
 
 ### Core Components
-- **DataLoader** (`src/data-loader.ts`): Reads and parses Claude Code JSONL files from `~/.local/share/claude-code/`
+- **DataLoader** (`src/data-loader.ts`): Reads and parses Claude Code JSONL files from `~/.claude/projects/`
 - **ContributionVisualizer** (`src/visualizer.ts`): Generates GitHub-style contribution grids with color-coded intensity levels
 - **CLI Commands** (`src/commands/`): Command handlers for show and stats operations
 - **Type System** (`src/types.ts`): Branded types and Zod schemas for data validation

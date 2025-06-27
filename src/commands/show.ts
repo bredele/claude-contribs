@@ -15,7 +15,7 @@ export async function showCommand(options: ShowOptions): Promise<void> {
     
     if (entries.length === 0) {
       console.log('No Claude usage data found. Make sure Claude Code is generating logs in the expected directory.');
-      console.log(`Looking for JSONL files in: ${options.dataDir || '~/.local/share/claude-code'}`);
+      console.log(`Looking for JSONL files in: ${options.dataDir || '~/.claude/projects'}`);
       return;
     }
     

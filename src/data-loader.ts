@@ -5,7 +5,7 @@ import { usageEntrySchema, type UsageEntry, type DailyUsage } from './types.js';
 import { formatDate } from './utils/date-utils.js';
 
 // Default Claude Code data directory
-const DEFAULT_CLAUDE_DATA_DIR = join(homedir(), '.local', 'share', 'claude-code');
+const DEFAULT_CLAUDE_DATA_DIR = join(homedir(), '.claude', 'projects');
 
 export class DataLoader {
   constructor(private dataDir: string = DEFAULT_CLAUDE_DATA_DIR) {}
@@ -105,7 +105,7 @@ export class DataLoader {
     
     for (const entry of entries) {
       // Create deduplication key from requestId and messageId
-      const key = `${entry.requestId || ''}-${entry.message.id || ''}-${entry.timestamp}`;
+      const key = `${entry.requestId || ''}-${entry.message?.id || ''}-${entry.timestamp}`;
       
       if (!seen.has(key)) {
         seen.add(key);
@@ -120,6 +120,9 @@ export class DataLoader {
     const dailyMap = new Map<string, DailyUsage>();
     
     for (const entry of entries) {
+      // Skip entries without usage data (already filtered by schema, but double-check)
+      if (!entry.message?.usage) continue;
+      
       const date = formatDate(new Date(entry.timestamp));
       const totalTokens = entry.message.usage.input_tokens + entry.message.usage.output_tokens;
       

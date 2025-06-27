@@ -17,7 +17,7 @@ program
   .description('Display contribution map')
   .option('-y, --year <year>', 'Year to display (default: current year)', String(getDefaultYear()))
   .option('-f, --format <format>', 'Output format (terminal|svg)', 'terminal')
-  .option('-d, --data-dir <dir>', 'Claude data directory (default: ~/.local/share/claude-code)')
+  .option('-d, --data-dir <dir>', 'Claude data directory (default: ~/.claude/projects)')
   .action(async (options) => {
     const parsedOptions = {
       year: options.year ? parseInt(options.year, 10) : undefined,
@@ -33,7 +33,7 @@ program
   .description('Show usage statistics')
   .option('--from <date>', 'Start date (YYYY-MM-DD)')
   .option('--to <date>', 'End date (YYYY-MM-DD)')
-  .option('-d, --data-dir <dir>', 'Claude data directory (default: ~/.local/share/claude-code)')
+  .option('-d, --data-dir <dir>', 'Claude data directory (default: ~/.claude/projects)')
   .action(async (options) => {
     await statsCommand({
       from: options.from,

@@ -17,6 +17,7 @@ export const createISOTimestamp = (value: string): ISOTimestamp => value as ISOT
 // Usage entry schema (based on Claude Code JSONL format)
 export const usageEntrySchema = z.object({
   timestamp: z.string().transform(createISOTimestamp),
+  type: z.string().optional(),
   message: z.object({
     id: z.string().optional().transform(val => val ? createMessageId(val) : undefined),
     model: z.string().optional().transform(val => val ? createModelName(val) : undefined),
@@ -25,13 +26,20 @@ export const usageEntrySchema = z.object({
       output_tokens: z.number(),
       cache_creation_input_tokens: z.number().optional(),
       cache_read_input_tokens: z.number().optional(),
-    }),
-  }),
+      service_tier: z.string().optional(),
+    }).optional(),
+  }).optional(),
   requestId: z.string().optional().transform(val => val ? createRequestId(val) : undefined),
   sessionId: z.string().optional().transform(val => val ? createSessionId(val) : undefined),
   costUSD: z.number().optional(),
   version: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // Only process assistant messages with usage data
+    return data.type === 'assistant' && data.message?.usage;
+  },
+  { message: "Only assistant messages with usage data are valid" }
+);
 
 export type UsageEntry = z.infer<typeof usageEntrySchema>;
 

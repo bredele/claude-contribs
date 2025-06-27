@@ -11,7 +11,7 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
     
     if (entries.length === 0) {
       console.log('No Claude usage data found. Make sure Claude Code is generating logs in the expected directory.');
-      console.log(`Looking for JSONL files in: ${options.dataDir || '~/.local/share/claude-code'}`);
+      console.log(`Looking for JSONL files in: ${options.dataDir || '~/.claude/projects'}`);
       return;
     }
     
@@ -25,8 +25,10 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
     
     // Calculate statistics
     const totalEntries = filteredEntries.length;
-    const totalInputTokens = filteredEntries.reduce((sum, entry) => sum + entry.message.usage.input_tokens, 0);
-    const totalOutputTokens = filteredEntries.reduce((sum, entry) => sum + entry.message.usage.output_tokens, 0);
+    const totalInputTokens = filteredEntries.reduce((sum, entry) => 
+      sum + (entry.message?.usage?.input_tokens || 0), 0);
+    const totalOutputTokens = filteredEntries.reduce((sum, entry) => 
+      sum + (entry.message?.usage?.output_tokens || 0), 0);
     const totalTokens = totalInputTokens + totalOutputTokens;
     const totalCost = filteredEntries.reduce((sum, entry) => sum + (entry.costUSD || 0), 0);
     
@@ -40,8 +42,8 @@ export async function statsCommand(options: StatsOptions): Promise<void> {
     const modelTokens = new Map<string, number>();
     
     for (const entry of filteredEntries) {
-      const model = entry.message.model || 'unknown';
-      const tokens = entry.message.usage.input_tokens + entry.message.usage.output_tokens;
+      const model = entry.message?.model || 'unknown';
+      const tokens = (entry.message?.usage?.input_tokens || 0) + (entry.message?.usage?.output_tokens || 0);
       
       modelCounts.set(model, (modelCounts.get(model) || 0) + 1);
       modelTokens.set(model, (modelTokens.get(model) || 0) + tokens);

@@ -47,23 +47,26 @@ claude-contributions stats --from 2024-01-01 --to 2024-12-31
 ## Data Source
 
 This tool reads Claude Code JSONL files from:
-- Default: `~/.local/share/claude-code/`
+- Default: `~/.claude/projects/`
 - Custom: Use `--data-dir` option
 
-The tool expects JSONL files with usage data in the format:
+The tool reads Claude Code JSONL files automatically and processes assistant messages with usage data. Example entry format:
 ```json
 {
-  "timestamp": "2024-06-27T10:30:00Z",
+  "type": "assistant",
+  "timestamp": "2025-06-27T10:30:00Z",
   "message": {
     "id": "msg_123",
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-20250514",
     "usage": {
       "input_tokens": 100,
-      "output_tokens": 50
+      "output_tokens": 50,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 25
     }
   },
   "requestId": "req_456",
-  "costUSD": 0.001
+  "sessionId": "session_789"
 }
 ```
 
