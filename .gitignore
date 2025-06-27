@@ -44,5 +44,6 @@ coverage/
 *.tmp
 *.temp
 
-# Generated SVG files
+# Repo artifacts
 claude-contributions-*.svg
+.claude

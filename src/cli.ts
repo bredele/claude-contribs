@@ -13,6 +13,31 @@ import { showCommand } from "./commands/show";
 import { statsCommand } from "./commands/stats";
 import { getDefaultYear, parseMonth } from "./utils/date-utils";
 
+/**
+ * Parses and validates command-line options for the show command.
+ */
+const parseShowOptions = (options: any) => {
+  let startMonth: number | undefined;
+
+  if (options.startMonth) {
+    try {
+      startMonth = parseMonth(options.startMonth);
+    } catch (error) {
+      console.error(
+        `Error: ${error instanceof Error ? error.message : "Invalid start month"}`
+      );
+      process.exit(1);
+    }
+  }
+
+  return {
+    year: options.year ? parseInt(options.year, 10) : undefined,
+    startMonth,
+    format: options.format as "terminal" | "svg",
+    dataDir: options.dataDir,
+  };
+};
+
 const program = new Command();
 
 program
@@ -65,28 +90,3 @@ program.action(async () => {
 });
 
 program.parse();
-
-/**
- * Parses and validates command-line options for the show command.
- */
-const parseShowOptions = (options: any) => {
-  let startMonth: number | undefined;
-
-  if (options.startMonth) {
-    try {
-      startMonth = parseMonth(options.startMonth);
-    } catch (error) {
-      console.error(
-        `Error: ${error instanceof Error ? error.message : "Invalid start month"}`
-      );
-      process.exit(1);
-    }
-  }
-
-  return {
-    year: options.year ? parseInt(options.year, 10) : undefined,
-    startMonth,
-    format: options.format as "terminal" | "svg",
-    dataDir: options.dataDir,
-  };
-};

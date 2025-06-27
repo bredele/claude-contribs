@@ -11,7 +11,7 @@ This is a TypeScript CLI tool that generates GitHub-style contribution maps for 
 ### Build and Development
 
 - `npm install` - Install dependencies
-- `npm run build` - Compile TypeScript to JavaScript
+- `npm run build` - Compile TypeScript to JavaScript with cmplr
 - `npm start` - Run the compiled CLI
 
 ### CLI Usage
@@ -48,15 +48,37 @@ This is a TypeScript CLI tool that generates GitHub-style contribution maps for 
 ## Coding Standards
 
 ### Function Declarations
+
 - **Always use arrow function expressions** instead of function declarations
 - Example: `export const myFunction = (param: string): string => { ... }`
 - NOT: `export function myFunction(param: string): string { ... }`
 
+### Documentation
+
+- Add block comments to all functions explaining purpose and context within the Claude contributions project
+- Do not document parameters or return types (TypeScript handles that)
+- Focus on explaining the "why" and project context rather than the "what"
+
+### Code Organization
+
+- Extract magic numbers and strings into named constants
+- Break large functions into smaller, focused methods
+- Use descriptive variable and function names
+- Prefer composition over inheritance
+
+### Build System
+
+- Use `cmplr` for TypeScript compilation with both CommonJS and ESM outputs
+- Generate TypeScript declaration files for all modules
+- Support dual package exports (import/require)
+
 ### Commit Message Format
+
 Follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 - **Format**: `<type>[optional scope]: <description>`
-- **Types**: 
+- **Types**:
+
   - `feat:` - New features
   - `fix:` - Bug fixes
   - `docs:` - Documentation changes

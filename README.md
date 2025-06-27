@@ -47,10 +47,12 @@ claude-contribs stats --from 2024-01-01 --to 2024-12-31
 ## Data Source
 
 This tool reads Claude Code JSONL files from:
+
 - Default: `~/.claude/projects/`
 - Custom: Use `--data-dir` option
 
 The tool reads Claude Code JSONL files automatically and processes assistant messages with usage data. Example entry format:
+
 ```json
 {
   "type": "assistant",
@@ -74,29 +76,3 @@ The tool reads Claude Code JSONL files automatically and processes assistant mes
 
 - `claude-contribs show` - Display contribution map (default command)
 - `claude-contribs stats` - Show usage statistics
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Development mode
-npm run dev
-
-# Lint
-npm run lint
-
-# Format
-npm run format
-
-# Test
-npm run test
-```
-
-## License
-
-MIT
