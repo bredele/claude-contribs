@@ -54,10 +54,11 @@ export const usageEntrySchema = z
   })
   .refine(
     (data) => {
-      // Only process assistant messages with usage data
-      return data.type === "assistant" && data.message?.usage;
+      // Process all entries with valid usage data structure
+      return data.message?.usage && 
+             (data.message.usage.input_tokens >= 0 || data.message.usage.output_tokens >= 0);
     },
-    { message: "Only assistant messages with usage data are valid" }
+    { message: "Only entries with valid usage data structure are processed" }
   );
 
 export type UsageEntry = z.infer<typeof usageEntrySchema>;
@@ -68,7 +69,6 @@ export interface DailyUsage {
   totalTokens: number;
   inputTokens: number;
   outputTokens: number;
-  totalCost: number;
   entryCount: number;
 }
 
@@ -105,4 +105,7 @@ export interface StatsOptions {
   from?: string;
   to?: string;
   dataDir?: string;
+  json?: boolean;
+  debug?: boolean;
+  excludeCache?: boolean; // ccusage compatibility mode
 }

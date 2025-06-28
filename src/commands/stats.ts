@@ -31,13 +31,34 @@ export const statsCommand = async (options: StatsOptions): Promise<void> => {
       return;
     }
 
-    const stats = calculateUsageStatistics(filteredEntries, loader);
-    displayStatistics(stats);
+    const stats = calculateUsageStatistics(filteredEntries, loader, options);
+    
+    if (options.debug) {
+      displayDebugInfo(filteredEntries, options);
+    }
+    
+    if (options.json) {
+      outputAsJson(stats);
+    } else {
+      displayStatistics(stats, options);
+    }
   } catch (error) {
     console.error("Error generating statistics:", error);
     process.exit(1);
   }
 };
+
+/**
+ * Detailed token breakdown per model for cost calculation.
+ */
+interface ModelTokenBreakdown {
+  count: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+  totalTokens: number;
+}
 
 /**
  * Statistics data structure for organized display.
@@ -46,23 +67,26 @@ interface UsageStatistics {
   totalEntries: number;
   totalInputTokens: number;
   totalOutputTokens: number;
+  totalCacheCreationTokens: number;
+  totalCacheReadTokens: number;
   totalTokens: number;
-  totalCost: number;
   firstDate?: string;
   lastDate?: string;
   dailyUsage: Array<{ date: string; totalTokens: number }>;
   avgDailyTokens: number;
   maxDailyTokens: number;
   maxDailyDate?: string;
-  modelBreakdown: Map<string, { count: number; tokens: number }>;
+  modelBreakdown: Map<string, ModelTokenBreakdown>;
 }
 
 /**
  * Calculates comprehensive usage statistics from filtered entries.
  */
-const calculateUsageStatistics = (filteredEntries: any[], loader: any): UsageStatistics => {
+const calculateUsageStatistics = (filteredEntries: any[], loader: any, options: StatsOptions): UsageStatistics => {
   const totalEntries = filteredEntries.length;
-  const totalInputTokens = filteredEntries.reduce(
+  
+  // Calculate base token counts
+  const baseInputTokens = filteredEntries.reduce(
     (sum, entry) => sum + (entry.message?.usage?.input_tokens || 0),
     0
   );
@@ -70,11 +94,18 @@ const calculateUsageStatistics = (filteredEntries: any[], loader: any): UsageSta
     (sum, entry) => sum + (entry.message?.usage?.output_tokens || 0),
     0
   );
-  const totalTokens = totalInputTokens + totalOutputTokens;
-  const totalCost = filteredEntries.reduce(
-    (sum, entry) => sum + (entry.costUSD || 0),
+  const totalCacheCreationTokens = filteredEntries.reduce(
+    (sum, entry) => sum + (entry.message?.usage?.cache_creation_input_tokens || 0),
     0
   );
+  const totalCacheReadTokens = filteredEntries.reduce(
+    (sum, entry) => sum + (entry.message?.usage?.cache_read_input_tokens || 0),
+    0
+  );
+  
+  // Calculate totals based on excludeCache option
+  const totalInputTokens = options.excludeCache ? baseInputTokens : baseInputTokens + totalCacheCreationTokens + totalCacheReadTokens;
+  const totalTokens = totalInputTokens + totalOutputTokens;
 
   // Date range calculation
   const dates = filteredEntries.map((entry) => entry.timestamp).sort();
@@ -82,21 +113,41 @@ const calculateUsageStatistics = (filteredEntries: any[], loader: any): UsageSta
   const lastDate = dates[dates.length - 1]?.split("T")[0];
 
   // Model usage breakdown
-  const modelBreakdown = new Map<string, { count: number; tokens: number }>();
+  const modelBreakdown = new Map<string, ModelTokenBreakdown>();
   
   for (const entry of filteredEntries) {
     const model = entry.message?.model || "unknown";
-    const tokens = (entry.message?.usage?.input_tokens || 0) + (entry.message?.usage?.output_tokens || 0);
+    const inputTokens = entry.message?.usage?.input_tokens || 0;
+    const outputTokens = entry.message?.usage?.output_tokens || 0;
+    const cacheCreationTokens = entry.message?.usage?.cache_creation_input_tokens || 0;
+    const cacheReadTokens = entry.message?.usage?.cache_read_input_tokens || 0;
+    
+    let totalTokens = inputTokens + outputTokens;
+    if (!options.excludeCache) {
+      totalTokens += cacheCreationTokens + cacheReadTokens;
+    }
 
-    const existing = modelBreakdown.get(model) || { count: 0, tokens: 0 };
+    const existing = modelBreakdown.get(model) || {
+      count: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0,
+      totalTokens: 0,
+    };
+    
     modelBreakdown.set(model, {
       count: existing.count + 1,
-      tokens: existing.tokens + tokens,
+      inputTokens: existing.inputTokens + inputTokens,
+      outputTokens: existing.outputTokens + outputTokens,
+      cacheCreationTokens: existing.cacheCreationTokens + cacheCreationTokens,
+      cacheReadTokens: existing.cacheReadTokens + cacheReadTokens,
+      totalTokens: existing.totalTokens + totalTokens,
     });
   }
 
   // Daily usage analysis
-  const dailyUsage = loader.aggregateByDay(filteredEntries);
+  const dailyUsage = loader.aggregateByDay(filteredEntries, options.excludeCache);
   const avgDailyTokens = dailyUsage.length > 0 ? totalTokens / dailyUsage.length : 0;
   const maxDailyTokens = Math.max(...dailyUsage.map((day: any) => day.totalTokens));
   const maxDailyDate = dailyUsage.find((day: any) => day.totalTokens === maxDailyTokens)?.date;
@@ -105,8 +156,9 @@ const calculateUsageStatistics = (filteredEntries: any[], loader: any): UsageSta
     totalEntries,
     totalInputTokens,
     totalOutputTokens,
+    totalCacheCreationTokens,
+    totalCacheReadTokens,
     totalTokens,
-    totalCost,
     firstDate,
     lastDate,
     dailyUsage,
@@ -118,9 +170,74 @@ const calculateUsageStatistics = (filteredEntries: any[], loader: any): UsageSta
 };
 
 /**
+ * Outputs statistics as formatted JSON to stdout.
+ * Converts Map objects to plain objects for proper JSON serialization.
+ */
+const outputAsJson = (stats: UsageStatistics): void => {
+  const jsonOutput = {
+    totalEntries: stats.totalEntries,
+    totalInputTokens: stats.totalInputTokens,
+    totalOutputTokens: stats.totalOutputTokens,
+    totalCacheCreationTokens: stats.totalCacheCreationTokens,
+    totalCacheReadTokens: stats.totalCacheReadTokens,
+    totalTokens: stats.totalTokens,
+    dateRange: {
+      firstDate: stats.firstDate,
+      lastDate: stats.lastDate,
+    },
+    dailyMetrics: {
+      activeDays: stats.dailyUsage.length,
+      avgDailyTokens: Math.round(stats.avgDailyTokens),
+      maxDailyTokens: stats.maxDailyTokens,
+      maxDailyDate: stats.maxDailyDate,
+    },
+    modelBreakdown: Object.fromEntries(
+      Array.from(stats.modelBreakdown.entries()).map(([model, data]) => [
+        model,
+        {
+          count: data.count,
+          inputTokens: data.inputTokens,
+          outputTokens: data.outputTokens,
+          cacheCreationTokens: data.cacheCreationTokens,
+          cacheReadTokens: data.cacheReadTokens,
+          totalTokens: data.totalTokens,
+          percentage: Number(((data.totalTokens / stats.totalTokens) * 100).toFixed(1)),
+        },
+      ])
+    ),
+    dailyUsage: stats.dailyUsage,
+  };
+
+  console.log(JSON.stringify(jsonOutput, null, 2));
+};
+
+/**
+ * Displays debug information about token calculation.
+ */
+const displayDebugInfo = (filteredEntries: any[], options: StatsOptions): void => {
+  console.log("");
+  console.log(chalk.bold("Debug Information"));
+  console.log(chalk.gray("─".repeat(50)));
+  
+  const baseTokens = filteredEntries.reduce((sum, entry) => 
+    sum + (entry.message?.usage?.input_tokens || 0) + (entry.message?.usage?.output_tokens || 0), 0);
+  const cacheCreationTokens = filteredEntries.reduce((sum, entry) => 
+    sum + (entry.message?.usage?.cache_creation_input_tokens || 0), 0);
+  const cacheReadTokens = filteredEntries.reduce((sum, entry) => 
+    sum + (entry.message?.usage?.cache_read_input_tokens || 0), 0);
+  
+  console.log(`${chalk.cyan("Base Tokens (input + output):")} ${baseTokens.toLocaleString()}`);
+  console.log(`${chalk.cyan("Cache Creation Tokens:")} ${cacheCreationTokens.toLocaleString()}`);
+  console.log(`${chalk.cyan("Cache Read Tokens:")} ${cacheReadTokens.toLocaleString()}`);
+  console.log(`${chalk.cyan("Total with Cache:")} ${(baseTokens + cacheCreationTokens + cacheReadTokens).toLocaleString()}`);
+  console.log(`${chalk.cyan("Mode:")} ${options.excludeCache ? "Excluding cache tokens (ccusage compatible)" : "Including all tokens"}`);
+  console.log("");
+};
+
+/**
  * Displays formatted statistics to the console.
  */
-const displayStatistics = (stats: UsageStatistics): void => {
+const displayStatistics = (stats: UsageStatistics, options?: StatsOptions): void => {
   console.log("");
   console.log(chalk.bold("Claude Usage Statistics"));
   console.log(chalk.gray("─".repeat(50)));
@@ -141,11 +258,21 @@ const displayStatistics = (stats: UsageStatistics): void => {
   // Token statistics
   console.log(chalk.bold("Token Usage"));
   console.log(
-    `${chalk.cyan("Input Tokens:")} ${formatTokenCount(stats.totalInputTokens)} (${stats.totalInputTokens.toLocaleString()})`
+    `${chalk.cyan("Input Tokens:")} ${formatTokenCount(stats.totalInputTokens - stats.totalCacheCreationTokens - stats.totalCacheReadTokens)} (${(stats.totalInputTokens - stats.totalCacheCreationTokens - stats.totalCacheReadTokens).toLocaleString()})`
   );
   console.log(
     `${chalk.cyan("Output Tokens:")} ${formatTokenCount(stats.totalOutputTokens)} (${stats.totalOutputTokens.toLocaleString()})`
   );
+  if (stats.totalCacheCreationTokens > 0) {
+    console.log(
+      `${chalk.cyan("Cache Creation Tokens:")} ${formatTokenCount(stats.totalCacheCreationTokens)} (${stats.totalCacheCreationTokens.toLocaleString()})`
+    );
+  }
+  if (stats.totalCacheReadTokens > 0) {
+    console.log(
+      `${chalk.cyan("Cache Read Tokens:")} ${formatTokenCount(stats.totalCacheReadTokens)} (${stats.totalCacheReadTokens.toLocaleString()})`
+    );
+  }
   console.log(
     `${chalk.cyan("Total Tokens:")} ${chalk.green(formatTokenCount(stats.totalTokens))} (${stats.totalTokens.toLocaleString()})`
   );
@@ -161,27 +288,17 @@ const displayStatistics = (stats: UsageStatistics): void => {
   );
   console.log("");
 
-  // Cost information (if available)
-  if (stats.totalCost > 0) {
-    console.log(chalk.bold("Cost Information"));
-    console.log(`${chalk.cyan("Total Cost:")} $${stats.totalCost.toFixed(4)}`);
-    console.log(
-      `${chalk.cyan("Average Cost per Day:")} $${(stats.totalCost / Math.max(stats.dailyUsage.length, 1)).toFixed(4)}`
-    );
-    console.log("");
-  }
-
   // Model breakdown
   if (stats.modelBreakdown.size > 0) {
     console.log(chalk.bold("Model Usage"));
     const sortedModels = Array.from(stats.modelBreakdown.entries()).sort(
-      (a, b) => b[1].tokens - a[1].tokens
+      (a, b) => b[1].totalTokens - a[1].totalTokens
     );
 
     for (const [model, data] of sortedModels) {
-      const percentage = ((data.tokens / stats.totalTokens) * 100).toFixed(1);
+      const percentage = ((data.totalTokens / stats.totalTokens) * 100).toFixed(1);
       console.log(
-        `${chalk.cyan(model)}: ${formatTokenCount(data.tokens)} tokens (${percentage}%) - ${data.count} conversations`
+        `${chalk.cyan(model)}: ${formatTokenCount(data.totalTokens)} tokens (${percentage}%) - ${data.count} conversations`
       );
     }
   }

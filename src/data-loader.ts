@@ -132,7 +132,8 @@ export class DataLoader {
   }
 
   /**
-   * Removes duplicate entries based on request ID, message ID, and timestamp.
+   * Removes duplicate entries based on request ID and message ID only.
+   * Matches ccusage deduplication approach which uses messageId + requestId hash.
    * Claude logs may contain duplicate entries, so deduplication ensures
    * accurate usage statistics and prevents inflated token counts.
    */
@@ -141,7 +142,7 @@ export class DataLoader {
     const unique: UsageEntry[] = [];
 
     for (const entry of entries) {
-      const key = `${entry.requestId || ""}-${entry.message?.id || ""}-${entry.timestamp}`;
+      const key = `${entry.requestId || ""}-${entry.message?.id || ""}`;
 
       if (!seen.has(key)) {
         seen.add(key);
@@ -157,22 +158,29 @@ export class DataLoader {
    * Combines all entries for each date into totals suitable for
    * generating the contribution map visualization.
    */
-  aggregateByDay(entries: UsageEntry[]): DailyUsage[] {
+  aggregateByDay(
+    entries: UsageEntry[],
+    excludeCache: boolean = false
+  ): DailyUsage[] {
     const dailyMap = new Map<string, DailyUsage>();
 
     for (const entry of entries) {
       if (!entry.message?.usage) continue;
 
       const date = formatDate(new Date(entry.timestamp));
-      const totalTokens =
+      let totalTokens =
         entry.message.usage.input_tokens + entry.message.usage.output_tokens;
+      if (!excludeCache) {
+        totalTokens +=
+          (entry.message.usage.cache_creation_input_tokens || 0) +
+          (entry.message.usage.cache_read_input_tokens || 0);
+      }
 
       if (dailyMap.has(date)) {
         const existing = dailyMap.get(date)!;
         existing.totalTokens += totalTokens;
         existing.inputTokens += entry.message.usage.input_tokens;
         existing.outputTokens += entry.message.usage.output_tokens;
-        existing.totalCost += entry.costUSD || 0;
         existing.entryCount += 1;
       } else {
         dailyMap.set(date, {
@@ -180,7 +188,6 @@ export class DataLoader {
           totalTokens,
           inputTokens: entry.message.usage.input_tokens,
           outputTokens: entry.message.usage.output_tokens,
-          totalCost: entry.costUSD || 0,
           entryCount: 1,
         });
       }

@@ -76,11 +76,17 @@ program
     "-d, --data-dir <dir>",
     "Claude data directory (default: ~/.claude/projects)"
   )
+  .option("--json", "Output statistics as JSON")
+  .option("--debug", "Show detailed token breakdown")
+  .option("--exclude-cache", "Exclude cache tokens (ccusage compatibility)")
   .action(async (options) => {
     await statsCommand({
       from: options.from,
       to: options.to,
       dataDir: options.dataDir,
+      json: options.json,
+      debug: options.debug,
+      excludeCache: options.excludeCache,
     });
   });
 
