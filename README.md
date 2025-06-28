@@ -29,6 +29,9 @@ claude-contribs show
 # Show specific year
 claude-contribs show --year 2024
 
+# Start from specific month (June to May)
+claude-contribs show --start-month 6
+
 # Export as SVG
 claude-contribs show --format svg
 
